@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+
+use App\Mail\PublishedProjectMail;
+
 use App\Models\Project;
 use App\Models\Technology;
 use App\Models\Type; //importo il type
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr; //classe per gli array
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
@@ -100,6 +106,12 @@ class ProjectController extends Controller
         if (Arr::exists($data, "technologies"))
             $project->technologies()->attach($data["technologies"]);
 
+        $mail = new PublishedProjectMail($project);
+
+        $user_email = Auth::user()->email;
+
+        Mail::to($user_email)->send($mail);
+
 
         return to_route('admin.projects.show', $project)
             ->with('message', 'Progetto creato correttamente');
@@ -181,6 +193,12 @@ class ProjectController extends Controller
         }
 
         $project->update($data);
+
+        $mail = new PublishedProjectMail($project);
+
+        $user_email = Auth::user()->email;
+
+        Mail::to($user_email)->send($mail);
 
         if (Arr::exists($data, "technologies"))
             $project->technologies()->sync($data["technologies"]);

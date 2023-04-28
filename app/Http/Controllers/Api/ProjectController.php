@@ -15,7 +15,14 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects = Project::where('published', true)->with('type', 'technologies')->orderBy('updated_at', 'DESC')->get();
+        $projects = Project::where('published', true)->with('type', 'technologies')->orderBy('updated_at', 'DESC')->paginate(6);
+
+        foreach ($projects as $project) {
+            // $project->text = $project->getAbstract(100); //faccio passare l'abstract invece del testo intero
+            // if ($project->image) $project->image = url('storage/' . $project->image);
+            if ($project->image) $project->image = $project->getImageUri();
+        }
+
         return response()->json($projects);
     }
 
@@ -36,9 +43,14 @@ class ProjectController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($slug)
+
     {
-        //
+        $project = Project::where('slug', $slug)->with('type', 'technologies')->first(); //prendi il progetto
+
+        if (!$project) return response(null, 404); //se non c'è errore
+
+        return response()->json($project); //se c'è dallo buono
     }
 
     /**
