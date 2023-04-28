@@ -106,11 +106,11 @@ class ProjectController extends Controller
         if (Arr::exists($data, "technologies"))
             $project->technologies()->attach($data["technologies"]);
 
-        $mail = new PublishedProjectMail($project);
-
-        $user_email = Auth::user()->email;
-
-        Mail::to($user_email)->send($mail);
+        if ($project->published) { //se il project è pubblicato
+            $mail = new PublishedProjectMail($project);
+            $user_email = Auth::user()->email;
+            Mail::to($user_email)->send($mail);
+        }
 
 
         return to_route('admin.projects.show', $project)
@@ -180,6 +180,8 @@ class ProjectController extends Controller
             ]
         );
 
+        $initial_status = $project->published;
+
         $data = $request->all();
         $data["slug"] = Project::generateUniqueSlug($data["title"]);
         $data["published"] = $request->has("published") ? 1 : 0;
@@ -194,11 +196,12 @@ class ProjectController extends Controller
 
         $project->update($data);
 
-        $mail = new PublishedProjectMail($project);
+        if ($initial_status != $project->published) { //se il project cambia stato
+            $mail = new PublishedProjectMail($project);
+            $user_email = Auth::user()->email;
+            Mail::to($user_email)->send($mail);
+        }
 
-        $user_email = Auth::user()->email;
-
-        Mail::to($user_email)->send($mail);
 
         if (Arr::exists($data, "technologies"))
             $project->technologies()->sync($data["technologies"]);
