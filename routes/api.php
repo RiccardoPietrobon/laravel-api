@@ -19,4 +19,4 @@ Route::apiResource('projects', ProjectController::class)->except('store', 'updat
 
 
 
-Route::get('/projects/{type_id}/type', [ProjectController::class, 'getProjectsByType']);
+Route::get('/type/{type_id}/projects', [ProjectController::class, 'getProjectsByType']);

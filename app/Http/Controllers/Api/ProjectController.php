@@ -24,7 +24,7 @@ class ProjectController extends Controller
             $project->image = $project->getImageUri();
         }
 
-        return response()->json($projects);
+        return response()->json(compact('projects'));
     }
 
     /**
