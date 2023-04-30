@@ -9,12 +9,13 @@ use App\Mail\PublishedProjectMail;
 use App\Models\Project;
 use App\Models\Technology;
 use App\Models\Type; //importo il type
-
+use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr; //classe per gli array
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
@@ -59,39 +60,9 @@ class ProjectController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate(
-            [
-                'title' => 'required|string|max:100',
-                'text' => 'required|string',
-                'image' => 'nullable|image|mimes:jpg,png,jpeg',
-                'published' => 'boolean',
-
-                'type_id' => 'nullable|exists:types,id',
-
-                'technologies' => 'nullable|exists:technologies,id',
-                'technologies.exists' => 'Le tech non sono valide',
-
-            ],
-            [
-                'title.required' => 'Il titolo è obbligatorio',
-                'title.string' => 'Il titolo deve essere una stringa',
-                'title.max' => 'Il titolo può avere un massimo di 100 caratteri',
-
-                'text.required' => 'Il titolo è obbligatorio',
-                'text.string' => 'Il testo deve essere una stringa',
-
-                'image.image' => 'Il file caricato deve essere un\'immagine',
-                'image.mimes' => 'L\'immagine deve essere un file jpg, png o jpeg',
-
-                'type_id.exists' => 'L\ID non è valido, seleziona tra quelli elencati',
-
-                'technologies' => 'nullable|exists:technologies,id',
-                'technologies.exists' => 'Le tech non sono valide',
-
-            ]
-        );
-
         $data = $request->all();
+        $this->validation($data);
+
 
         if (Arr::exists($data, 'image')) { //se esiste l'immagine
             $path = Storage::put('uploads/progetti', $data['image']); //viene caricata nello storage
@@ -107,9 +78,7 @@ class ProjectController extends Controller
             $project->technologies()->attach($data["technologies"]);
 
         if ($project->published) { //se il project è pubblicato
-            $mail = new PublishedProjectMail($project);
-            $user_email = Auth::user()->email;
-            Mail::to($user_email)->send($mail);
+            $this->sendPublishedMail($project);
         }
 
 
@@ -152,33 +121,7 @@ class ProjectController extends Controller
      */
     public function update(Request $request, Project $project)
     {
-        $request->validate(
-            [
-                'title' => 'required|string|max:100',
-                'text' => 'required|string',
-                'image' => 'nullable|image|mimes:jpg,png,jpeg',
-                'published' => 'boolean',
-
-                'type_id' => 'nullable|exists:types,id',
-                'technologies' => 'nullable|exists:technologies,id',
-
-            ],
-            [
-                'title.required' => 'Il titolo è obbligatorio',
-                'title.string' => 'Il titolo deve essere una stringa',
-                'title.max' => 'Il titolo può avere un massimo di 100 caratteri',
-
-                'text.required' => 'Il testo è obbligatorio',
-                'text.string' => 'Il testo deve essere una stringa',
-
-                'image.image' => 'Il file caricato deve essere un\'immagine',
-                'image.mimes' => 'L\'immagine deve essere un file jpg, png o jpeg',
-
-                'type_id.exists' => 'L\'ID non è valido, seleziona tra quelli elencati',
-
-                'technologies.exists' => 'Le tech non sono valide',
-            ]
-        );
+        $this->validation($request->all());
 
         $initial_status = $project->published;
 
@@ -197,9 +140,7 @@ class ProjectController extends Controller
         $project->update($data);
 
         if ($initial_status != $project->published) { //se il project cambia stato
-            $mail = new PublishedProjectMail($project);
-            $user_email = Auth::user()->email;
-            Mail::to($user_email)->send($mail);
+            $this->sendPublishedMail($project);
         }
 
 
@@ -230,5 +171,44 @@ class ProjectController extends Controller
         return to_route('admin.projects.index', $project)
             ->with('message_type', 'danger')
             ->with('message', 'Progetto eliminato definitivamente');
+    }
+
+    private function sendPublishedMail(Project $project) //centralizzo la mail
+    {
+        $mail = new PublishedProjectMail($project);
+        $user_email = Auth::user()->email;
+        Mail::to($user_email)->send($mail);
+    }
+
+    private function validation($data) //centralizzo la validazione
+    {
+        return Validator::make(
+            $data,
+            [
+                'title' => 'required|string|max:100',
+                'text' => 'required|string',
+                'image' => 'nullable|image|mimes:jpg,png,jpeg',
+                'published' => 'boolean',
+
+                'type_id' => 'nullable|exists:types,id',
+                'technologies' => 'nullable|exists:technologies,id',
+
+            ],
+            [
+                'title.required' => 'Il titolo è obbligatorio',
+                'title.string' => 'Il titolo deve essere una stringa',
+                'title.max' => 'Il titolo può avere un massimo di 100 caratteri',
+
+                'text.required' => 'Il testo è obbligatorio',
+                'text.string' => 'Il testo deve essere una stringa',
+
+                'image.image' => 'Il file caricato deve essere un\'immagine',
+                'image.mimes' => 'L\'immagine deve essere un file jpg, png o jpeg',
+
+                'type_id.exists' => 'L\'ID non è valido, seleziona tra quelli elencati',
+
+                'technologies.exists' => 'Le tech non sono valide',
+            ]
+        )->validate();
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -46,16 +48,24 @@ class Project extends Model
 
     protected function getUpdatedAtAttribute($value)
     {
-        return date('d/m/Y H:i', strtotime($value)); //setta questo attributo
+        //return date('d/m/Y H:i', strtotime($value)); //setta questo attributo
+        Carbon::setLocale('it');
+        $date_from = Carbon::create($value);
+        $date_now = Carbon::now();
+        return str_replace('prima', 'fa', $date_from->diffForHumans($date_now));
     }
 
     protected function getCreatedAtAttribute($value)
     {
-        return date('d/m/Y H:i', strtotime($value)); //setta questo attributo
+        //return date('d/m/Y H:i', strtotime($value)); //setta questo attributo
+        Carbon::setLocale('it');
+        $date_from = Carbon::create($value);
+        $date_now = Carbon::now();
+        return str_replace('prima', 'fa', $date_from->diffForHumans($date_now));
     }
 
     public function getImageUri()
     {
-        return $this->image ? asset('storage/' . $this->image) : "https://img.freepik.com/free-vector/luxury-gradient-modern-abstract-background_343694-1911.jpg"; //setta questo attributo così posso avere sempre un placeholder
+        return $this->image ? url('storage/' . $this->image) : "https://img.freepik.com/free-vector/luxury-gradient-modern-abstract-background_343694-1911.jpg"; //setta questo attributo così posso avere sempre un placeholder
     }
 }
